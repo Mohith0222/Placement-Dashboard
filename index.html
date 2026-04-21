@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Placement Metrics Dashboard</title>
+  <script>
+    (() => {
+      const adminKey = "placementAdminAccount";
+      const sessionKey = "placementAdminSession";
+      const defaultAdmin = { username: "admin", password: "admin123" };
+
+      try {
+        JSON.parse(localStorage.getItem(adminKey));
+      } catch {
+        localStorage.removeItem(adminKey);
+      }
+
+      if (!localStorage.getItem(adminKey)) {
+        localStorage.setItem(adminKey, JSON.stringify(defaultAdmin));
+      }
+
+      if (localStorage.getItem(sessionKey) !== "active") {
+        window.location.href = "login.html";
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Campus placement tracker</p>
+        <h1>Placement Metrics Dashboard</h1>
+      </div>
+      <div class="header-badge">
+        <span class="status-dot"></span>
+        Local data
+      </div>
+      <button class="ghost-button logout-button" id="logoutBtn" type="button">Logout</button>
+    </header>
+
+    <section class="stats-grid" aria-label="Placement statistics">
+      <article class="stat-card">
+        <span class="stat-icon">TS</span>
+        <span class="stat-label">Total Students</span>
+        <strong id="totalStudents">0</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-icon">PL</span>
+        <span class="stat-label">Placed</span>
+        <strong id="placedStudents">0</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-icon">CG</span>
+        <span class="stat-label">Average CGPA</span>
+        <strong id="averageCgpa">0.00</strong>
+      </article>
+    </section>
+
+    <section class="charts-grid" aria-label="Placement charts">
+      <article class="chart-card">
+        <div class="section-heading">
+          <div>
+            <h2>Placement Split</h2>
+            <p>Placed vs not placed</p>
+          </div>
+        </div>
+        <div class="chart-box">
+          <canvas id="placementChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <div class="section-heading">
+          <div>
+            <h2>CGPA Distribution</h2>
+            <p>Student count by range</p>
+          </div>
+        </div>
+        <div class="chart-box">
+          <canvas id="cgpaChart"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <form class="student-form" id="studentForm">
+        <div class="section-heading">
+          <h2 id="formTitle">Add Student</h2>
+          <button class="ghost-button hidden" id="cancelEditBtn" type="button">Cancel edit</button>
+        </div>
+
+        <input type="hidden" id="studentId">
+
+        <label for="studentName">Name</label>
+        <input id="studentName" name="studentName" type="text" placeholder="Aarav Sharma" required>
+        <p class="form-error" id="studentNameError"></p>
+
+        <label for="rollNo">Roll No</label>
+        <input id="rollNo" name="rollNo" type="text" placeholder="CSE2026001" required>
+        <p class="form-error" id="rollNoError"></p>
+
+        <label for="cgpa">CGPA</label>
+        <input id="cgpa" name="cgpa" type="number" min="0" max="10" step="0.01" placeholder="8.75" required>
+        <p class="form-error" id="cgpaError"></p>
+
+        <label for="skills">Skills</label>
+        <textarea id="skills" name="skills" rows="3" placeholder="JavaScript, React, SQL" required></textarea>
+        <p class="form-error" id="skillsError"></p>
+
+        <label for="placementStatus">Placement Status</label>
+        <select id="placementStatus" name="placementStatus" required>
+          <option value="Placed">Placed</option>
+          <option value="Not Placed">Not Placed</option>
+        </select>
+        <p class="form-error" id="placementStatusError"></p>
+        <p class="form-error form-error-summary" id="formSummaryError"></p>
+
+        <button class="primary-button" id="submitBtn" type="submit">Add Student</button>
+      </form>
+
+      <section class="table-panel">
+        <div class="section-heading table-heading">
+          <div>
+            <h2>Students</h2>
+            <p id="resultCount">No records yet</p>
+          </div>
+          <div class="table-actions">
+            <button class="ghost-button" id="loadSampleBtn" type="button">Load Sample Data</button>
+            <button class="ghost-button" id="exportCsvBtn" type="button">Export to CSV</button>
+            <button class="ghost-button" id="downloadReportBtn" type="button">Download Report</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <label class="search-field" for="searchInput">
+            <span>Search</span>
+            <input id="searchInput" type="search" placeholder="Name, roll no, or skill">
+          </label>
+
+          <label class="filter-field" for="statusFilter">
+            <span>Status</span>
+            <select id="statusFilter">
+              <option value="All">All</option>
+              <option value="Placed">Placed</option>
+              <option value="Not Placed">Not Placed</option>
+            </select>
+          </label>
+
+          <label class="filter-field" for="cgpaFilter">
+            <span>CGPA Range</span>
+            <select id="cgpaFilter">
+              <option value="All">All</option>
+              <option value="6-7">6-7</option>
+              <option value="7-8">7-8</option>
+              <option value="8-9">8-9</option>
+              <option value="9+">9+</option>
+            </select>
+          </label>
+
+          <label class="search-field" for="skillFilter">
+            <span>Skills</span>
+            <input id="skillFilter" type="search" placeholder="react sql python">
+          </label>
+
+          <label class="filter-field" for="sortSelect">
+            <span>Sort</span>
+            <select id="sortSelect">
+              <option value="newest">Newest First</option>
+              <option value="name-asc">Name A-Z</option>
+              <option value="name-desc">Name Z-A</option>
+              <option value="cgpa-asc">CGPA Low-High</option>
+              <option value="cgpa-desc">CGPA High-Low</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Roll No</th>
+                <th>CGPA</th>
+                <th>Skills</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody"></tbody>
+          </table>
+          <div class="empty-state" id="emptyState">
+            <h3>No students found</h3>
+            <p>Add a student or adjust your search and filter.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

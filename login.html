@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | Placement Metrics Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-card">
+      <p class="eyebrow">Admin access</p>
+      <h1>Placement Metrics Dashboard</h1>
+      <p class="login-copy">Sign in to manage placement records, reports, and analytics.</p>
+
+      <form id="loginForm" novalidate>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" placeholder="admin" required>
+        <p class="form-error" id="usernameError"></p>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="admin123" required>
+        <p class="form-error" id="passwordError"></p>
+
+        <p class="form-error form-error-summary" id="loginError"></p>
+        <button class="primary-button" type="submit">Login</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const adminStorageKey = "placementAdminAccount";
+    const sessionStorageKey = "placementAdminSession";
+    const defaultAdmin = { username: "admin", password: "admin123" };
+
+    function getAdminAccount() {
+      try {
+        const account = JSON.parse(localStorage.getItem(adminStorageKey));
+        if (account && typeof account.username === "string" && typeof account.password === "string") {
+          return account;
+        }
+      } catch {
+        localStorage.removeItem(adminStorageKey);
+      }
+
+      localStorage.setItem(adminStorageKey, JSON.stringify(defaultAdmin));
+      return defaultAdmin;
+    }
+
+    if (!localStorage.getItem(adminStorageKey)) {
+      localStorage.setItem(adminStorageKey, JSON.stringify(defaultAdmin));
+    }
+
+    if (localStorage.getItem(sessionStorageKey) === "active") {
+      window.location.href = "index.html";
+    }
+
+    const loginForm = document.getElementById("loginForm");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const usernameError = document.getElementById("usernameError");
+    const passwordError = document.getElementById("passwordError");
+    const loginError = document.getElementById("loginError");
+
+    function setLoginError(element, input, message) {
+      element.textContent = message;
+      input.classList.toggle("input-error", Boolean(message));
+    }
+
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+      const admin = getAdminAccount();
+
+      setLoginError(usernameError, usernameInput, username ? "" : "Username is required.");
+      setLoginError(passwordError, passwordInput, password ? "" : "Password is required.");
+      loginError.textContent = "";
+
+      if (!username || !password) {
+        return;
+      }
+
+      if (username !== admin.username || password !== admin.password) {
+        loginError.textContent = "Invalid username or password.";
+        return;
+      }
+
+      localStorage.setItem(sessionStorageKey, "active");
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
